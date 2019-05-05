@@ -77,7 +77,7 @@ proj_intrinsic = lift_intrinsic
 
 # Set up scale and world coordinates of voxel grid
 voxel_size = (1. / opt.grid_dim) * 1.1 * scale
-grid_origin = torch.tensor(np.eye(4)).float().to(device).squeeze()
+grid_origin = torch.tensor(np.eye(4)).float().cuda().squeeze()
 grid_origin[:3,3] = grid_barycenter
 
 # Minimum and maximum depth used for rejecting voxels outside of the cmaera frustrum
@@ -95,7 +95,7 @@ model = DeepVoxels(lifting_img_dims=proj_image_dims,
                    num_grid_feats=opt.num_grid_feats,
                    nf0=opt.nf0,
                    img_sidelength=input_image_dims[0])
-model.to(device)
+model.cuda()
 
 # Projection module
 projection = ProjectionHelper(projection_intrinsic=proj_intrinsic,
@@ -111,11 +111,11 @@ projection = ProjectionHelper(projection_intrinsic=proj_intrinsic,
                               near_plane=near_plane)
 
 # L1 loss
-criterionL1 = nn.L1Loss(reduction='mean').to(device)
+criterionL1 = nn.L1Loss(reduction='mean').cuda()
 
 # GAN loss
-criterionGAN = GANLoss().to(device)
-discriminator = PatchDiscriminator(input_nc=3).to(device)
+criterionGAN = GANLoss().cuda()
+discriminator = PatchDiscriminator(input_nc=3).cuda()
 
 # Optimizers
 optimizerD = torch.optim.Adam(discriminator.parameters(), lr=opt.lr)
@@ -176,12 +176,12 @@ def train():
     print('Begin training...')
     for epoch in range(opt.start_epoch, opt.max_epoch):
         for trgt_views, nearest_view in dataloader:
-            backproj_mapping = projection.comp_lifting_idcs(camera_to_world=nearest_view['pose'].squeeze().to(device),
+            backproj_mapping = projection.comp_lifting_idcs(camera_to_world=nearest_view['pose'].squeeze().cuda(),
                                                             grid2world=grid_origin)
 
             proj_mappings = list()
             for i in range(len(trgt_views)):
-                proj_mappings.append(projection.compute_proj_idcs(trgt_views[i]['pose'].squeeze().to(device),
+                proj_mappings.append(projection.compute_proj_idcs(trgt_views[i]['pose'].squeeze().cuda(),
                                                                   grid2world=grid_origin))
 
             if backproj_mapping is None:
@@ -196,7 +196,7 @@ def train():
 
             proj_frustrum_idcs, proj_grid_coords = list(zip(*proj_mappings))
 
-            outputs, depth_maps = model(nearest_view['gt_rgb'].to(device),
+            outputs, depth_maps = model(nearest_view['gt_rgb'].cuda(),
                                         proj_frustrum_idcs, proj_grid_coords,
                                         lift_volume_idcs, lift_img_coords,
                                         writer=writer)
@@ -214,7 +214,7 @@ def train():
             l1_losses = list()
             for idx in range(len(trgt_views)):
                 l1_losses.append(criterionL1(outputs[idx].contiguous().view(-1).float(),
-                                             trgt_views[idx]['gt_rgb'].to(device).view(-1).float()))
+                                             trgt_views[idx]['gt_rgb'].cuda().view(-1).float()))
 
             losses_d = []
             losses_g = []
@@ -234,7 +234,7 @@ def train():
                 loss_d_fake = criterionGAN(pred_fake, False)
 
                 # Real forward step
-                real_input = trgt_views[idx]['gt_rgb'].float().to(device)
+                real_input = trgt_views[idx]['gt_rgb'].float().cuda()
                 pred_real = discriminator.forward(real_input)
                 loss_d_real = criterionGAN(pred_real, True)
 
@@ -273,7 +273,7 @@ def train():
                                                              normalize=True).detach().numpy(),
                                  iter)
                 output_vs_gt = torch.cat((torch.cat(outputs, dim=0),
-                                          torch.cat([i['gt_rgb'].to(device) for i in trgt_views], dim=0)),
+                                          torch.cat([i['gt_rgb'].cuda() for i in trgt_views], dim=0)),
                                          dim=0)
                 writer.add_image("Output_vs_gt",
                                  torchvision.utils.make_grid(output_vs_gt,
@@ -331,7 +331,7 @@ def test():
         iter = 0
         depth_imgs = []
         for trgt_pose in dataloader:
-            trgt_pose = trgt_pose.squeeze().to(device)
+            trgt_pose = trgt_pose.squeeze().cuda()
 
             start = time.time()
             # compute projection mapping
