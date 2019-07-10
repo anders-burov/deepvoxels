@@ -45,6 +45,14 @@ def load_img(filepath, target_size=None, anti_aliasing=True, downsampling_order=
     return img
 
 
+def write_img(filepath, img):
+    if len(img.shape) == 3:
+        img = cv2.cvtColor(img, cv2.COLOR_RGB2BGR)
+        cv2.imwrite(filepath, img)
+    else:
+        cv2.imwrite(filepath, img.astype(np.uint16))
+
+
 def load_pose(filename):
     lines = open(filename).read().splitlines()
     if len(lines) == 1:
@@ -55,6 +63,13 @@ def load_pose(filename):
     else:
         lines = [[x[0], x[1], x[2], x[3]] for x in (x.split(" ") for x in lines[:4])]
         return np.asarray(lines).astype(np.float32).squeeze()
+
+
+def write_pose(filename, pose):
+    with open(filename, 'w') as file:
+        for i in range(15):
+            file.write('%.15f ' % pose[i // 4, i % 4])
+        file.write('%.15f\n' % pose[3, 3])
 
 
 def glob_imgs(path):

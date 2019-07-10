@@ -23,6 +23,7 @@ class ProjectionHelper:
         self.depth_max = depth_max
         self.projection_image_dims = projection_image_dims
         self.lifting_image_dims = lifting_image_dims
+
         self.voxel_size = voxel_size
         self.device = device
         self.near_plane = near_plane

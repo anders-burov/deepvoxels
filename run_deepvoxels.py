@@ -375,7 +375,7 @@ def test():
         for i in range(len(depth_imgs)):
             cv2.imwrite(os.path.join(depth_dir, "img_%05d.png" % i), depth_imgs[i].astype(np.uint16))
 
-    print("Average forward pass time over %d examples is %f"%(iter, forward_time/iter))
+    print("Average forward pass time over                 %d examples is %f"%(iter, forward_time/iter))
 
 
 def main():
