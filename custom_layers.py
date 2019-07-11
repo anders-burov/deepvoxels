@@ -8,7 +8,7 @@ import torchvision.utils
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 
-from pytorch_prototyping.pytorch_prototyping import *
+from pytorch_prototyping import *
 
 
 class IntegrationNet(torch.nn.Module):
