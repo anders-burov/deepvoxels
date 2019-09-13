@@ -132,8 +132,9 @@ class OcclusionNet(nn.Module):
             nn.ReLU(True),
         )
 
-        num_down = min(util.num_divisible_by_2(self.frustrum_depth),
-                       util.num_divisible_by_2(frustrum_dims[0]))
+        # num_down = min(util.num_divisible_by_2(self.frustrum_depth),
+        #                util.num_divisible_by_2(frustrum_dims[0]))
+        num_down = 2
 
         self.occlusion_net = Unet3d(in_channels=self.occnet_nf,
                                     out_channels=self.occnet_nf,
@@ -147,9 +148,11 @@ class OcclusionNet(nn.Module):
             nn.Softmax(dim=2),
         )
 
-    def forward(self,
-                novel_img_frustrum):
-        frustrum_feats_depth = torch.cat((self.depth_coords, novel_img_frustrum), dim=1)
+    def forward(self, novel_img_frustrum):
+        #shape = [*novel_img_frustrum.shape]
+        #shape[1] += 1
+        #frustrum_feats_depth = torch.cat((self.depth_coords, novel_img_frustrum), dim=1).contiguous().view(*shape)
+        frustrum_feats_depth = torch.cat((self.depth_coords, novel_img_frustrum), dim=1).contiguous()
 
         occlusion_prep = self.occlusion_prep(frustrum_feats_depth)
         frustrum_feats = self.occlusion_net(occlusion_prep)
